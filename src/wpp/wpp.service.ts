@@ -127,6 +127,7 @@ export class WppService {
     return s;
   }
 
+  // send a message button to client
   async sendButtonMessage(
     data: SendButtonMessageInput,
   ): Promise<SendMessageStatus> {
