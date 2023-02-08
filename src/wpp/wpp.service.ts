@@ -36,7 +36,7 @@ export class WppService {
           '--disable-gpu',
         ],
       },
-      authStrategy: new NoAuth(),
+      authStrategy: new LocalAuth({ clientId: 'client-1' }),
     });
     this.client.initialize();
 
