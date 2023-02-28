@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { phoneNumberFormatter } from 'src/lib/formatter';
 import {
   Buttons,
@@ -7,10 +7,14 @@ import {
   Message,
   MessageAck,
   NoAuth,
+  RemoteAuth,
 } from 'whatsapp-web.js';
 import { StateModel, QRCodeModel } from './models';
 import { SendButtonMessageInput } from './models/send-button-message-input';
 import { SendMessageStatus } from './models/send-message-status';
+import mongoose from 'mongoose';
+import { MongoStore } from 'wwebjs-mongo';
+import { GetRegisteredClientModel } from './models/get-registeredclient-model';
 
 @Injectable()
 export class WppService {
@@ -21,68 +25,87 @@ export class WppService {
 
   constructor() {
     this.logger.log('Whatsapp client constructor is initializing');
-    this.client = new Client({
-      //restartOnAuthFail: true,
-      puppeteer: {
-        headless: true,
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-accelerated-2d-canvas',
-          '--no-first-run',
-          '--no-zygote',
-          '--single-process', // <- Esta nao funciona no windows
-          '--disable-gpu',
-        ],
-      },
-      authStrategy: new NoAuth(),
-    });
-    this.client.initialize();
+    this.logger.log('ClientID - ' + process.env.WPP_CLIENT_ID);
+    const store = new MongoStore({ mongoose: mongoose });
+    mongoose
+      .connect(
+        'mongodb+srv://caduselhorst:wppjs123@cluster0.q7mmhaa.mongodb.net/?retryWrites=true&w=majority',
+      )
+      .then(() => {
+        this.client = new Client({
+          //restartOnAuthFail: true,
+          puppeteer: {
+            headless: true,
+            args: [
+              '--no-sandbox',
+              '--disable-setuid-sandbox',
+              '--disable-dev-shm-usage',
+              '--disable-accelerated-2d-canvas',
+              '--no-first-run',
+              '--no-zygote',
+              '--single-process', // <- Esta nao funciona no windows
+              '--disable-gpu',
+            ],
+          },
+          authStrategy: new RemoteAuth({
+            store: store,
+            backupSyncIntervalMs: 300000,
+            clientId: process.env.WPP_CLIENT_ID,
+          }),
+        });
+        this.client.initialize();
 
-    /*
-     * Registros dos eventos da API
-     */
-    this.client.on('qr', (qrCode) => {
-      this.logger.log('Evento de qrcode');
-      this.qrcode = qrCode;
-    });
+        /*
+         * Registros dos eventos da API
+         */
+        this.client.on('qr', (qrCode) => {
+          this.logger.log('Evento de qrcode');
+          this.qrcode = qrCode;
+        });
 
-    this.client.on('ready', (evt) => {
-      this.logger.log('API apta para enviar e receber mensagens');
-    });
+        this.client.on('ready', (evt) => {
+          this.logger.log('API apta para enviar e receber mensagens');
+        });
 
-    this.client.on('auth_failure', (evt) => {
-      this.logger.log('Evento de auth_failure ' + JSON.stringify(evt));
-    });
-    this.client.on('authenticated', (evt) => {
-      this.logger.log('API autenticada');
-    });
+        this.client.on('auth_failure', (evt) => {
+          this.logger.log('Evento de auth_failure ' + JSON.stringify(evt));
+        });
+        this.client.on('authenticated', (evt) => {
+          this.logger.log('API autenticada');
+        });
 
-    this.client.on('disconnected', (evt) => {
-      this.logger.log('Evento de disconnected');
-      this.client.initialize();
-    });
+        this.client.on('remote_session_saved', () => {
+          this.logger.log('Session saved on remote data base');
+        });
 
-    /*
+        this.client.on('disconnected', (evt) => {
+          this.logger.log('Evento de disconnected');
+          this.client.initialize();
+        });
+
+        /*
     this.client.on('message', (evt: Message) => {
       this.logger.log('Evento de message ' + JSON.stringify(evt));
     });
     */
 
-    this.client.on('message_ack', (evt: MessageAck) => {
-      this.logger.log('Evento de message_ack ' + JSON.stringify(evt));
-    });
+        this.client.on('message_ack', (evt: MessageAck) => {
+          this.logger.log('Evento de message_ack ' + JSON.stringify(evt));
+        });
 
-    /*
+        /*
     this.client.on('message_create', (evt: Message) => {
       this.logger.log('Evento de message_create ' + JSON.stringify(evt));
     });
     */
 
-    this.client.on('loading_screen', (percent, message) => {
-      this.logger.log('Carregando ' + percent + '%' + ' ' + message);
-    });
+        this.client.on('loading_screen', (percent, message) => {
+          this.logger.log('Carregando ' + percent + '%' + ' ' + message);
+        });
+      })
+      .catch((mdberror) => {
+        this.logger.error(mdberror);
+      });
 
     this.logger.log('Whatsapp client constructor has finished');
   }
@@ -104,26 +127,54 @@ export class WppService {
     return s;
   }
 
+  async getRegisteredClient(
+    contact: string,
+  ): Promise<GetRegisteredClientModel> {
+    const regClient = await this.client.getNumberId(contact);
+
+    if (regClient === null) {
+      const result = new GetRegisteredClientModel();
+      result.message = 'The contact number is not registered on Whatsapp';
+      return result;
+    }
+
+    const result = new GetRegisteredClientModel();
+
+    result.registeredContact = regClient.user;
+    result.server = regClient.server;
+    result.message = 'OK';
+
+    return result;
+  }
+
   async sendMessage(
     contato: string,
     mensagem: string,
   ): Promise<SendMessageStatus> {
     this.logger.log('Send message is initialized');
 
-    const formattedContact = phoneNumberFormatter(contato);
     const s = new SendMessageStatus();
 
-    await this.client
-      .sendMessage(formattedContact, mensagem)
-      .then(() => {
-        s.status = 'Envio OK';
-      })
-      .catch((error) => {
-        this.logger.error(error);
-        const s = new SendMessageStatus();
-        s.status = error;
-      })
-      .finally(() => this.logger.log('Send message is finished'));
+    const registeredclient = await this.getRegisteredClient(contato);
+
+    if (!registeredclient.message.includes('OK')) {
+      throw new BadRequestException(
+        'Número informado não é registrado no Whatsapp',
+      );
+    }
+
+    this.logger.log(
+      `Contact is registered: ${registeredclient.registeredContact}@${registeredclient.server}`,
+    );
+
+    const result = await this.client.sendMessage(
+      `${registeredclient.registeredContact}@${registeredclient.server}`,
+      mensagem,
+    );
+
+    s.id = result.id.id;
+    s.status = 'OK';
+
     return s;
   }
 

@@ -1,10 +1,11 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { WppModule } from './wpp/wpp.module';
 
 @Module({
-  imports: [WppModule],
+  imports: [ConfigModule.forRoot(), WppModule],
   controllers: [AppController],
   providers: [AppService],
 })
