@@ -28,9 +28,7 @@ export class WppService {
     this.logger.log('ClientID - ' + process.env.WPP_CLIENT_ID);
     const store = new MongoStore({ mongoose: mongoose });
     mongoose
-      .connect(
-        'mongodb+srv://caduselhorst:wppjs123@cluster0.q7mmhaa.mongodb.net/?retryWrites=true&w=majority',
-      )
+      .connect(process.env.REMOTE_DB_URL)
       .then(() => {
         this.client = new Client({
           //restartOnAuthFail: true,
