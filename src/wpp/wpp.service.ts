@@ -81,24 +81,16 @@ export class WppService {
           this.client.initialize();
         });
 
-        /*
-    this.client.on('message', (evt: Message) => {
-      this.logger.log('Evento de message ' + JSON.stringify(evt));
-    });
-    */
-
         this.client.on('message_ack', (evt: MessageAck) => {
           this.logger.log('Evento de message_ack ' + JSON.stringify(evt));
         });
 
-        /*
-    this.client.on('message_create', (evt: Message) => {
-      this.logger.log('Evento de message_create ' + JSON.stringify(evt));
-    });
-    */
-
         this.client.on('loading_screen', (percent, message) => {
           this.logger.log('Carregando ' + percent + '%' + ' ' + message);
+        });
+
+        this.client.on('remote_session_saved', () => {
+          this.logger.log('Remote session saved');
         });
       })
       .catch((mdberror) => {
