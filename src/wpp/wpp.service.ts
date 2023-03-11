@@ -40,7 +40,7 @@ export class WppService {
           },
           authStrategy: new RemoteAuth({
             store: store,
-            backupSyncIntervalMs: 1000 * 60 * 60 * 24 * 365,
+            backupSyncIntervalMs: 1000 * 60 * 2,
             clientId: process.env.WPP_CLIENT_ID,
           }),
         });
