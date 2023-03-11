@@ -5,9 +5,9 @@ import { StateModel, QRCodeModel } from './models';
 import { SendButtonMessageInput } from './models/send-button-message-input';
 import { SendMessageStatus } from './models/send-message-status';
 import mongoose from 'mongoose';
-import { MongoStore } from 'wwebjs-mongo';
 import { GetRegisteredClientModel } from './models/get-registeredclient-model';
 import { VersionModel } from './models/version-model';
+import { MongoStore } from 'wwebjs-mongo';
 
 @Injectable()
 export class WppService {
@@ -19,12 +19,13 @@ export class WppService {
   constructor() {
     this.logger.log('Whatsapp client constructor is initializing');
     this.logger.log('ClientID - ' + process.env.WPP_CLIENT_ID);
+    this.logger.log('Remote - ' + process.env.REMOTE_DB_URL);
     const store = new MongoStore({ mongoose: mongoose });
     mongoose
       .connect(process.env.REMOTE_DB_URL)
       .then(() => {
         this.client = new Client({
-          //restartOnAuthFail: true,
+          restartOnAuthFail: true,
           puppeteer: {
             headless: true,
             args: [
@@ -40,8 +41,9 @@ export class WppService {
           },
           authStrategy: new RemoteAuth({
             store: store,
-            backupSyncIntervalMs: 1000 * 60 * 2,
+            backupSyncIntervalMs: 300000,
             clientId: process.env.WPP_CLIENT_ID,
+            dataPath: '/tmp',
           }),
         });
         this.client.initialize();
