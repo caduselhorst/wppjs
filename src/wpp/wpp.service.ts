@@ -19,7 +19,6 @@ export class WppService {
   constructor() {
     this.logger.log('Whatsapp client constructor is initializing');
     this.logger.log('ClientID - ' + process.env.WPP_CLIENT_ID);
-    this.logger.log('Remote - ' + process.env.REMOTE_DB_URL);
     const store = new MongoStore({ mongoose: mongoose });
     mongoose
       .connect(process.env.REMOTE_DB_URL)
