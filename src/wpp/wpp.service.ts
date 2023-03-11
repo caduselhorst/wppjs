@@ -1,14 +1,6 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { phoneNumberFormatter } from 'src/lib/formatter';
-import {
-  Buttons,
-  Client,
-  LocalAuth,
-  Message,
-  MessageAck,
-  NoAuth,
-  RemoteAuth,
-} from 'whatsapp-web.js';
+import { Buttons, Client, MessageAck, RemoteAuth } from 'whatsapp-web.js';
 import { StateModel, QRCodeModel } from './models';
 import { SendButtonMessageInput } from './models/send-button-message-input';
 import { SendMessageStatus } from './models/send-message-status';
@@ -48,7 +40,7 @@ export class WppService {
           },
           authStrategy: new RemoteAuth({
             store: store,
-            backupSyncIntervalMs: 300000,
+            backupSyncIntervalMs: 1000 * 60 * 60 * 24 * 365,
             clientId: process.env.WPP_CLIENT_ID,
           }),
         });
@@ -88,10 +80,6 @@ export class WppService {
 
         this.client.on('loading_screen', (percent, message) => {
           this.logger.log('Carregando ' + percent + '%' + ' ' + message);
-        });
-
-        this.client.on('remote_session_saved', () => {
-          this.logger.log('Remote session saved');
         });
       })
       .catch((mdberror) => {
