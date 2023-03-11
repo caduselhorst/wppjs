@@ -15,6 +15,7 @@ import { SendMessageStatus } from './models/send-message-status';
 import mongoose from 'mongoose';
 import { MongoStore } from 'wwebjs-mongo';
 import { GetRegisteredClientModel } from './models/get-registeredclient-model';
+import { VersionModel } from './models/version-model';
 
 @Injectable()
 export class WppService {
@@ -98,6 +99,18 @@ export class WppService {
       });
 
     this.logger.log('Whatsapp client constructor has finished');
+  }
+
+  async getVersion(): Promise<VersionModel> {
+    this.logger.log('Executando método de recuperação da versão');
+
+    const version = await this.client.getWWebVersion();
+
+    const versionModel = new VersionModel();
+
+    versionModel.version = version;
+
+    return versionModel;
   }
 
   async getQRCode(): Promise<QRCodeModel> {

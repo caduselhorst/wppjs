@@ -33,7 +33,7 @@
     "reflect-metadata": "^0.1.13",
     "rimraf": "^3.0.2",
     "rxjs": "^7.2.0",
-    "whatsapp-web.js": "^1.19.2",
+    "whatsapp-web.js": "^1.19.4",
     "wwebjs-mongo": "^1.1.0"
   },
   "devDependencies": {

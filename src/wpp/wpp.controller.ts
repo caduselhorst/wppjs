@@ -16,6 +16,7 @@ import { WppService } from './wpp.service';
 
 import * as qr from 'qr-image';
 import * as fs from 'fs';
+import { VersionModel } from './models/version-model';
 
 @Controller()
 export class WppController {
@@ -42,6 +43,12 @@ export class WppController {
   @HttpCode(200)
   async getState(): Promise<StateModel> {
     return await this.wppService.getState();
+  }
+
+  @Get('wpp/version')
+  @HttpCode(200)
+  async getVersion(): Promise<VersionModel> {
+    return await this.wppService.getVersion();
   }
 
   @Post('wpp/send-message')
