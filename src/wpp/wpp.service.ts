@@ -43,7 +43,6 @@ export class WppService {
             store: store,
             backupSyncIntervalMs: 300000,
             clientId: process.env.WPP_CLIENT_ID,
-            dataPath: '/tmp',
           }),
         });
         this.client.initialize();
