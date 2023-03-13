@@ -17,7 +17,7 @@ export class WppService {
   private readonly logger = new Logger(WppService.name);
 
   constructor() {
-    this.logger.log('Whatsapp client constructor is initializing');
+    this.logger.log('### Whatsapp client constructor is initializing ###');
     this.logger.log('ClientID - ' + process.env.WPP_CLIENT_ID);
     const store = new MongoStore({ mongoose: mongoose });
     mongoose
