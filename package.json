@@ -28,14 +28,12 @@
     "@nestjs/platform-express": "^9.3.10",
     "class-transformer": "^0.5.1",
     "class-validator": ">=0.14.0",
-    "mongoose": "^7.0.2",
     "qr-image": "^3.2.0",
     "reflect-metadata": "^0.1.13",
     "rimraf": "^4.4.0",
     "rxjs": "^7.8.0",
     "webpack": ">=5.76.1",
-    "whatsapp-web.js": "^1.19.4",
-    "wwebjs-mongo": "^1.1.0"
+    "whatsapp-web.js": "^1.19.4"
   },
   "devDependencies": {
     "@nestjs/cli": "^9.2.0",

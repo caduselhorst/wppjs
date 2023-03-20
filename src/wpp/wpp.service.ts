@@ -1,13 +1,17 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { phoneNumberFormatter } from 'src/lib/formatter';
-import { Buttons, Client, MessageAck, RemoteAuth } from 'whatsapp-web.js';
+import {
+  Buttons,
+  Client,
+  LocalAuth,
+  MessageAck,
+  RemoteAuth,
+} from 'whatsapp-web.js';
 import { StateModel, QRCodeModel } from './models';
 import { SendButtonMessageInput } from './models/send-button-message-input';
 import { SendMessageStatus } from './models/send-message-status';
-import mongoose from 'mongoose';
 import { GetRegisteredClientModel } from './models/get-registeredclient-model';
 import { VersionModel } from './models/version-model';
-import { MongoStore } from 'wwebjs-mongo';
 
 @Injectable()
 export class WppService {
@@ -18,73 +22,63 @@ export class WppService {
 
   constructor() {
     this.logger.log('### Whatsapp client constructor is initializing ###');
-    this.logger.log('ClientID - ' + process.env.WPP_CLIENT_ID);
-    const store = new MongoStore({ mongoose: mongoose });
-    mongoose
-      .connect(process.env.REMOTE_DB_URL)
-      .then(() => {
-        this.client = new Client({
-          restartOnAuthFail: true,
-          puppeteer: {
-            headless: true,
-            args: [
-              '--no-sandbox',
-              '--disable-setuid-sandbox',
-              '--disable-dev-shm-usage',
-              '--disable-accelerated-2d-canvas',
-              '--no-first-run',
-              '--no-zygote',
-              '--single-process', // <- Esta nao funciona no windows
-              '--disable-gpu',
-            ],
-          },
-          authStrategy: new RemoteAuth({
-            store: store,
-            backupSyncIntervalMs: 300000,
-            clientId: process.env.WPP_CLIENT_ID,
-          }),
-        });
-        this.client.initialize();
 
-        /*
-         * Registros dos eventos da API
-         */
-        this.client.on('qr', (qrCode) => {
-          this.logger.log('Evento de qrcode');
-          this.qrcode = qrCode;
-        });
+    this.client = new Client({
+      restartOnAuthFail: true,
+      puppeteer: {
+        headless: true,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-accelerated-2d-canvas',
+          '--no-first-run',
+          '--no-zygote',
+          '--single-process', // <- Esta nao funciona no windows
+          '--disable-gpu',
+        ],
+      },
+      authStrategy: new LocalAuth({
+        clientId: process.env.WPP_CLIENT_ID,
+      }),
+    });
+    this.client.initialize();
 
-        this.client.on('ready', (evt) => {
-          this.logger.log('API apta para enviar e receber mensagens');
-        });
+    /*
+     * Registros dos eventos da API
+     */
+    this.client.on('qr', (qrCode) => {
+      this.logger.log('Evento de qrcode');
+      this.qrcode = qrCode;
+    });
 
-        this.client.on('auth_failure', (evt) => {
-          this.logger.log('Evento de auth_failure ' + JSON.stringify(evt));
-        });
-        this.client.on('authenticated', (evt) => {
-          this.logger.log('API autenticada');
-        });
+    this.client.on('ready', (evt) => {
+      this.logger.log('API apta para enviar e receber mensagens');
+    });
 
-        this.client.on('remote_session_saved', () => {
-          this.logger.log('Session saved on remote data base');
-        });
+    this.client.on('auth_failure', (evt) => {
+      this.logger.log('Evento de auth_failure ' + JSON.stringify(evt));
+    });
+    this.client.on('authenticated', (evt) => {
+      this.logger.log('API autenticada');
+    });
 
-        this.client.on('disconnected', (evt) => {
-          this.logger.log('Evento de disconnected');
-          this.client.initialize();
-        });
+    this.client.on('remote_session_saved', () => {
+      this.logger.log('Session saved on remote data base');
+    });
 
-        this.client.on('message_ack', (evt: MessageAck) => {
-          this.logger.log('Evento de message_ack ' + JSON.stringify(evt));
-        });
+    this.client.on('disconnected', (evt) => {
+      this.logger.log('Evento de disconnected');
+      this.client.initialize();
+    });
 
-        this.client.on('loading_screen', (percent, message) => {
-          this.logger.log('Carregando ' + percent + '%' + ' ' + message);
-        });
-      })
-      .catch((mdberror) => {
-        this.logger.error(mdberror);
-      });
+    this.client.on('message_ack', (evt: MessageAck) => {
+      this.logger.log('Evento de message_ack ' + JSON.stringify(evt));
+    });
+
+    this.client.on('loading_screen', (percent, message) => {
+      this.logger.log('Carregando ' + percent + '%' + ' ' + message);
+    });
 
     this.logger.log('Whatsapp client constructor has finished');
   }
