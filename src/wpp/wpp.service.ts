@@ -121,7 +121,15 @@ export class WppService {
   async getRegisteredClient(
     contact: string,
   ): Promise<GetRegisteredClientModel> {
-    const regClient = await this.client.getNumberId(contact);
+    let regClient = null;
+    try {
+      regClient = await this.client.getNumberId(contact);
+    } catch (error) {
+      this.logger.error(
+        'An error ocurred during attempt to identify the registration number on wpp',
+      );
+      this.logger.error(error);
+    }
 
     if (regClient === null) {
       const result = new GetRegisteredClientModel();
