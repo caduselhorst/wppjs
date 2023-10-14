@@ -1,12 +1,6 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { phoneNumberFormatter } from 'src/lib/formatter';
-import {
-  Buttons,
-  Client,
-  LocalAuth,
-  MessageAck,
-  RemoteAuth,
-} from 'whatsapp-web.js';
+import { Buttons, Client, LocalAuth, MessageAck } from 'whatsapp-web.js';
 import { StateModel, QRCodeModel } from './models';
 import { SendButtonMessageInput } from './models/send-button-message-input';
 import { SendMessageStatus } from './models/send-message-status';
@@ -21,8 +15,23 @@ export class WppService {
   private readonly logger = new Logger(WppService.name);
 
   constructor() {
+    let path = '.';
+    let id = 'clientid';
+
+    const args = process.argv;
+
+    args.forEach((e) => {
+      if (e.startsWith('--path')) {
+        path = e.split(':')[1];
+      }
+
+      if (e.startsWith('--id')) {
+        id = e.split(':')[1];
+      }
+    });
+
     this.logger.log('### Whatsapp client constructor is initializing ###');
-    this.logger.log('ClientID=' + process.env.WPP_CLIENT_ID);
+    this.logger.log(`Client ID: ${id} Data path: ${path}`);
     this.client = new Client({
       restartOnAuthFail: true,
       puppeteer: {
@@ -40,10 +49,10 @@ export class WppService {
       },
       authStrategy: new LocalAuth({
         clientId: process.env.WPP_CLIENT_ID,
+        dataPath: path,
       }),
     });
     this.client.initialize();
-
     /*
      * Registros dos eventos da API
      */
@@ -53,14 +62,14 @@ export class WppService {
     });
 
     this.client.on('ready', (evt) => {
-      this.logger.log('API apta para enviar e receber mensagens');
+      this.logger.log('API apta para enviar e receber mensagens -> ' + evt);
     });
 
     this.client.on('auth_failure', (evt) => {
       this.logger.log('Evento de auth_failure ' + JSON.stringify(evt));
     });
     this.client.on('authenticated', (evt) => {
-      this.logger.log('API autenticada');
+      this.logger.log('API autenticada -> ' + evt);
     });
 
     this.client.on('remote_session_saved', () => {
@@ -68,7 +77,7 @@ export class WppService {
     });
 
     this.client.on('disconnected', (evt) => {
-      this.logger.log('Evento de disconnected');
+      this.logger.log('Evento de disconnected -> ' + evt);
       this.client.initialize();
     });
 
