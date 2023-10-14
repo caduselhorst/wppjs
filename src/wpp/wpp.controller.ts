@@ -63,7 +63,12 @@ export class WppController {
         input.message,
     );
 
-    return await this.wppService.sendMessage(input.contact, input.message);
+    const result = await this.wppService.sendMessage(
+      input.contact,
+      input.message,
+    );
+
+    return result;
   }
 
   @Post('wpp/send-button-message')
